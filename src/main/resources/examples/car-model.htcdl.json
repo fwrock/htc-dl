@@ -1,0 +1,135 @@
+{
+  "@context": "dtmi:htc:context;1",
+  "@id": "dtmi:htc:mobility:car;1",
+  "@type": "Interface",
+  "displayName": "Intelligent Simulated Car",
+  "description": "A comprehensive digital twin model for an autonomous car in the HTC Simulation Platform.",
+  "@versionInfo": {
+    "version": "1.0.0",
+    "changeLog": "Initial complete version with FSM, Physics, Rules, and AI capabilities."
+  },
+
+  "schemas": [
+    {
+      "@id": "dtmi:htc:schemas:tripSummary;1",
+      "@type": "Object",
+      "fields": [
+        { "name": "totalDistance", "schema": "double", "unit": "metre" },
+        { "name": "finalTick", "schema": "long" }
+      ]
+    }
+  ],
+
+  "properties": [
+    { "name": "tripStatus", "schema": "string", "writable": false, "semanticId": "htc:mobility:tripStatus" },
+    { "name": "fuelLevel", "schema": "double", "unit": "percent", "writable": false },
+    { "name": "destinationNodeId", "schema": "string", "writable": true }
+  ],
+
+  "telemetry": [
+    {
+      "name": "locationUpdate",
+      "schema": "dtmi:com:fluidix:schemas:gpsLocation;1",
+      "emissionProfile": { "type": "periodic", "rate": 1, "unit": "perSecond" }
+    },
+    {
+        "name": "engineTemp",
+        "schema": "double",
+        "unit": "celsius",
+        "emissionProfile": { "type": "onChange", "tolerance": 1.0 }
+    }
+  ],
+
+  "commands": [
+    {
+      "name": "startTrip",
+      "intent": "control",
+      "executionMode": "async",
+      "completionEvents": { "success": "tripStarted", "failure": "tripStartFailed" }
+    },
+    {
+      "name": "getDiagnosticReport",
+      "intent": "query",
+      "executionMode": "sync",
+      "responseSchema": { "name": "report", "schema": "string" }
+    },
+    {
+      "name": "reroute",
+      "intent": "control",
+      "executionMode": "async",
+      "requestSchema": {
+        "name": "rerouteParameters",
+        "@type": "Object",
+        "fields": [
+            { "name": "avoidRoads", "schema": { "@type": "Array", "elementSchema": "string" } },
+            { "name": "reason", "schema": "string" }
+        ]
+      }
+    }
+  ],
+
+  "events": [
+    { "name": "tripStarted" },
+    { "name": "tripStartFailed" },
+    {
+      "name": "arrivedAtDestination",
+      "payloadSchema": "dtmi:htc:schemas:tripSummary;1"
+    },
+    { "name": "lowFuelWarning" }
+  ],
+  
+  "relationships": [
+    { "@type": "Relationship", "name": "drivenBy", "target": "dtmi:htc:driver;1" }
+  ],
+
+  "stateMachine": {
+    "initialState": "Parked",
+    "states": [ 
+      { "name": "Parked" }, 
+      { "name": "EnRoute" }, 
+      { "name": "FinishedTrip" } 
+    ],
+    "transitions": [
+      {
+        "from": "Parked", 
+        "to": "EnRoute",
+        "trigger": { "command": "startTrip" },
+        "action": { "emitEvent": "tripStarted" }
+      },
+      {
+        "from": "EnRoute", 
+        "to": "FinishedTrip",
+        "trigger": { "event": "arrivedAtDestination" },
+        "action": { "updateProperty": "tripStatus", "value": "Completed" }
+      }
+    ]
+  },
+
+  "physics": {
+    "mass": { "value": 1500, "unit": "kilogram" },
+    "dimensions": { "length": 4.5, "width": 1.8, "height": 1.5, "unit": "metre" }
+  },
+  
+  "rules": [
+    {
+      "name": "LowFuelWarningRule",
+      "condition": "properties.fuelLevel < 10.0",
+      "action": { "emitEvent": "lowFuelWarning" }
+    }
+  ],
+
+  "goals": [
+    { "name": "minimizeTravelTime", "priority": 1.0 },
+    { "name": "minimizeFuelConsumption", "priority": 0.5 }
+  ],
+  
+  "aiModels": [
+    {
+      "name": "routingDecisionModel",
+      "purpose": "pathfinding",
+      "modelUri": "htc-models://ml/route_predictor_v3.onnx",
+      "inputSchema": "dtmi:htc:schemas:trafficQueryInput;1",
+      "outputSchema": "dtmi:htc:schemas:routeDecisionOutput;1"
+    }
+  ]
+}

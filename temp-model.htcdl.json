@@ -1,0 +1,330 @@
+{
+    "@context" : "dtmi:htc:context;1",
+    "@id" : "dtmi:htc:mobility:drone;1",
+    "@type" : "Interface",
+    "displayName" : "Autonomous Drone",
+    "description" : "An intelligent autonomous drone for surveillance",
+    "@versionInfo" : {
+        "version" : "1.0.0",
+        "changeLog" : "Initial drone model with full autonomy"
+    },
+    "schemas" : null,
+    "properties" : [
+        {
+            "name" : "batteryLevel",
+            "schema" : "double",
+            "writable" : false,
+            "unit" : "percent",
+            "semanticId" : null
+        },
+        {
+            "name" : "altitude",
+            "schema" : "double",
+            "writable" : false,
+            "unit" : "metre",
+            "semanticId" : null
+        },
+        {
+            "name" : "isArmed",
+            "schema" : "boolean",
+            "writable" : true,
+            "unit" : null,
+            "semanticId" : null
+        },
+        {
+            "name" : "flightMode",
+            "schema" : "string",
+            "writable" : true,
+            "unit" : null,
+            "semanticId" : null
+        }
+    ],
+    "telemetry" : [
+        {
+            "name" : "gpsPosition",
+            "schema" : {
+                "@type" : "Object",
+                "fields" : [
+                    {
+                        "name" : "latitude",
+                        "schema" : "double"
+                    },
+                    {
+                        "name" : "longitude",
+                        "schema" : "double"
+                    },
+                    {
+                        "name" : "altitude",
+                        "schema" : "double"
+                    }
+                ]
+            },
+            "unit" : null,
+            "emissionProfile" : {
+                "type" : "periodic",
+                "rate" : 1.0,
+                "unit" : "perSecond",
+                "tolerance" : null
+            }
+        },
+        {
+            "name" : "batteryStatus",
+            "schema" : "double",
+            "unit" : "percent",
+            "emissionProfile" : {
+                "type" : "onChange",
+                "rate" : null,
+                "unit" : null,
+                "tolerance" : 5.0
+            }
+        }
+    ],
+    "commands" : [
+        {
+            "name" : "takeOff",
+            "intent" : "control",
+            "executionMode" : "async",
+            "requestSchema" : {
+                "name" : "takeOffParams",
+                "@type" : "Object",
+                "fields" : [
+                    {
+                        "name" : "targetAltitude",
+                        "schema" : "double",
+                        "unit" : "metre"
+                    }
+                ]
+            },
+            "responseSchema" : null,
+            "completionEvents" : {
+                "success" : "takeOffCompleted",
+                "failure" : "takeOffFailed"
+            }
+        },
+        {
+            "name" : "land",
+            "intent" : "control",
+            "executionMode" : "async",
+            "requestSchema" : null,
+            "responseSchema" : null,
+            "completionEvents" : null
+        },
+        {
+            "name" : "returnToBase",
+            "intent" : "control",
+            "executionMode" : "async",
+            "requestSchema" : null,
+            "responseSchema" : null,
+            "completionEvents" : null
+        },
+        {
+            "name" : "emergencyStop",
+            "intent" : "control",
+            "executionMode" : "sync",
+            "requestSchema" : null,
+            "responseSchema" : null,
+            "completionEvents" : null
+        }
+    ],
+    "events" : [
+        {
+            "name" : "takeOffCompleted",
+            "payloadSchema" : null
+        },
+        {
+            "name" : "takeOffFailed",
+            "payloadSchema" : null
+        },
+        {
+            "name" : "landingCompleted",
+            "payloadSchema" : null
+        },
+        {
+            "name" : "lowBattery",
+            "payloadSchema" : null
+        },
+        {
+            "name" : "emergencyLanding",
+            "payloadSchema" : null
+        },
+        {
+            "name" : "obstacleDetected",
+            "payloadSchema" : null
+        }
+    ],
+    "relationships" : null,
+    "stateMachine" : {
+        "initialState" : "Grounded",
+        "states" : [
+            {
+                "name" : "Grounded"
+            },
+            {
+                "name" : "TakingOff"
+            },
+            {
+                "name" : "Flying"
+            },
+            {
+                "name" : "Landing"
+            },
+            {
+                "name" : "Emergency"
+            }
+        ],
+        "transitions" : [
+            {
+                "from" : "Grounded",
+                "to" : "TakingOff",
+                "trigger" : {
+                    "command" : "takeOff",
+                    "event" : null,
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "TakingOff",
+                "to" : "Flying",
+                "trigger" : {
+                    "command" : null,
+                    "event" : "takeOffCompleted",
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "TakingOff",
+                "to" : "Grounded",
+                "trigger" : {
+                    "command" : null,
+                    "event" : "takeOffFailed",
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "Flying",
+                "to" : "Landing",
+                "trigger" : {
+                    "command" : "land",
+                    "event" : null,
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "Flying",
+                "to" : "Landing",
+                "trigger" : {
+                    "command" : "returnToBase",
+                    "event" : null,
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "Landing",
+                "to" : "Grounded",
+                "trigger" : {
+                    "command" : null,
+                    "event" : "landingCompleted",
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "Flying",
+                "to" : "Emergency",
+                "trigger" : {
+                    "command" : "emergencyStop",
+                    "event" : null,
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "Flying",
+                "to" : "Emergency",
+                "trigger" : {
+                    "command" : null,
+                    "event" : "lowBattery",
+                    "condition" : null
+                },
+                "action" : null
+            },
+            {
+                "from" : "Emergency",
+                "to" : "Grounded",
+                "trigger" : {
+                    "command" : null,
+                    "event" : "emergencyLanding",
+                    "condition" : null
+                },
+                "action" : null
+            }
+        ]
+    },
+    "physics" : {
+        "mass" : {
+            "value" : 2.5,
+            "unit" : "kilogram"
+        },
+        "dimensions" : {
+            "length" : 0.8,
+            "width" : 0.8,
+            "height" : 0.3,
+            "unit" : "metre"
+        }
+    },
+    "rules" : [
+        {
+            "name" : "LowBatteryRule",
+            "condition" : "properties.batteryLevel < 20.0",
+            "action" : {
+                "emitEvent" : "lowBattery",
+                "updateProperty" : null,
+                "value" : null
+            }
+        },
+        {
+            "name" : "CriticalBatteryRule",
+            "condition" : "properties.batteryLevel < 10.0",
+            "action" : {
+                "emitEvent" : "emergencyLanding",
+                "updateProperty" : null,
+                "value" : null
+            }
+        }
+    ],
+    "goals" : [
+        {
+            "name" : "maintainSafeAltitude",
+            "priority" : 1.0
+        },
+        {
+            "name" : "conserveBattery",
+            "priority" : 0.8
+        },
+        {
+            "name" : "avoidObstacles",
+            "priority" : 1.0
+        }
+    ],
+    "aiModels" : [
+        {
+            "name" : "obstacleAvoidanceModel",
+            "purpose" : "obstacle detection and avoidance",
+            "modelUri" : "htc-models://ai/obstacle_avoidance_v2.onnx",
+            "inputSchema" : "dtmi:htc:schemas:sensorData;1",
+            "outputSchema" : "dtmi:htc:schemas:navigationCommand;1"
+        },
+        {
+            "name" : "pathPlanningModel",
+            "purpose" : "optimal path planning",
+            "modelUri" : "htc-models://ai/path_planner_v1.onnx",
+            "inputSchema" : null,
+            "outputSchema" : null
+        }
+    ]
+}
